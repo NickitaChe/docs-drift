@@ -151,3 +151,45 @@ test("scanRepository does not treat prose sentences as commands", async () => {
     await fs.rm(fixtureRoot, { recursive: true, force: true });
   }
 });
+
+test("scanRepository does not treat help descriptions and code samples as CLI commands", async () => {
+  const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "docs-drift-help-"));
+  try {
+    await fs.writeFile(
+      path.join(fixtureRoot, "README.md"),
+      [
+        "# Example",
+        "",
+        "```",
+        "  -o, --types-output          Output name/path for types file | defaults to `env.d.ts`",
+        "  -e, --example-env-path      Path to save .env.example file",
+        "declare namespace NodeJS {",
+        "```",
+        "",
+        "```bash",
+        "npx gen-env-types .env -o src/types/env.d.ts -e .",
+        "```"
+      ].join("\n"),
+      "utf8"
+    );
+
+    const report = await scanRepository(fixtureRoot, {
+      docs: { include: ["README.md"] },
+      sources: {
+        cli: {
+          command: "node -e \"console.log('gen-env-types path/to/.env'); console.log('  -o, --types-output  Output'); console.log('  -e, --example-env-path  Output');\""
+        }
+      },
+      checks: ["cli_flags"],
+      report: { failOn: ["missing_in_source"] }
+    });
+
+    const issueValues = new Set(report.issues.map((issue) => issue.value));
+    assert.equal(issueValues.has("declare namespace NodeJS"), false);
+    assert.equal(issueValues.has("defaults to"), false);
+    assert.equal(issueValues.has("Path to save"), false);
+    assert.equal(issueValues.has("npx gen-env-types"), false);
+  } finally {
+    await fs.rm(fixtureRoot, { recursive: true, force: true });
+  }
+});

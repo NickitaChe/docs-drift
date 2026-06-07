@@ -1,9 +1,9 @@
-import { execFile } from "node:child_process";
+import { exec } from "node:child_process";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 
-const execFileAsync = promisify(execFile);
+const execAsync = promisify(exec);
 const DOUBLE_STAR_SENTINEL = "__DOCS_DRIFT_DOUBLE_STAR__";
 
 export type CheckName = "cli_flags" | "env_vars" | "config_keys";
@@ -438,16 +438,15 @@ function extractMarkdownFacts(content: string): {
   const configKeys = new Set<string>();
   const codeMatches = content.match(/```[\s\S]*?```/g) ?? [];
   const inlineMatches = content.match(/`[^`\n]+`/g) ?? [];
-  const codeSegments = [...codeMatches, ...inlineMatches];
+  const codeSegments = [...codeMatches.map(stripFenceBlock), ...inlineMatches.map(stripInlineCode)];
   const knownFileExtensions = new Set(["md", "json", "yaml", "yml", "js", "ts", "sh", "example"]);
 
   for (const segment of codeSegments) {
-    for (const match of segment.matchAll(/(^|\s)([a-z0-9:_-]+(?:\s+[a-z0-9:_-]+)+)(?=\s|$)/gim)) {
-      const candidate = match[2].trim();
-      if (candidate.includes("--") || candidate.includes("=") || /^[A-Z0-9_.-]+$/.test(candidate)) {
-        continue;
+    for (const line of segment.split(/\r?\n/)) {
+      const candidate = extractCommandFromLine(line);
+      if (candidate) {
+        commands.add(candidate);
       }
-      commands.add(candidate);
     }
 
     for (const match of segment.matchAll(/(^|\s)(--?[a-z0-9][a-z0-9-]*)(?=[\s=,`]|$)/gim)) {
@@ -484,21 +483,19 @@ function extractMarkdownFacts(content: string): {
 }
 
 async function extractCliFacts(repositoryRoot: string, command: string): Promise<{ commands: string[]; flags: string[] }> {
-  const [file, ...args] = splitCommand(command);
-  if (!file) {
+  if (!command.trim()) {
     throw new Error("CLI command is empty.");
   }
 
-  const { stdout, stderr } = await execFileAsync(file, args, { cwd: repositoryRoot, shell: true });
-  const output = `${stdout}\n${stderr}`;
+  const output = await readCliOutput(repositoryRoot, command);
   const commands = new Set<string>();
   const flags = new Set<string>();
 
   for (const line of output.split(/\r?\n/)) {
     const trimmed = line.trim();
-    const commandMatch = trimmed.match(/^([a-z0-9:_-]+(?:\s+[a-z0-9:_-]+)*)\s{2,}/i);
-    if (commandMatch) {
-      commands.add(commandMatch[1]);
+    const command = extractCommandFromLine(trimmed);
+    if (command) {
+      commands.add(command);
     }
 
     for (const match of trimmed.matchAll(/(^|\s)(--?[a-z0-9][a-z0-9-]*)(?=[\s=,]|$)/gim)) {
@@ -507,6 +504,30 @@ async function extractCliFacts(repositoryRoot: string, command: string): Promise
   }
 
   return { commands: [...commands], flags: [...flags] };
+}
+
+async function readCliOutput(repositoryRoot: string, command: string): Promise<string> {
+  try {
+    const { stdout, stderr } = await execAsync(command, { cwd: repositoryRoot });
+    return `${stdout}\n${stderr}`;
+  } catch (error: unknown) {
+    const stdout = getExecOutput(error, "stdout");
+    const stderr = getExecOutput(error, "stderr");
+    const output = `${stdout}\n${stderr}`.trim();
+    if (output) {
+      return output;
+    }
+    throw error;
+  }
+}
+
+function getExecOutput(error: unknown, key: "stdout" | "stderr"): string {
+  if (!error || typeof error !== "object" || !(key in error)) {
+    return "";
+  }
+
+  const value = (error as Record<"stdout" | "stderr", unknown>)[key];
+  return typeof value === "string" ? value : Buffer.isBuffer(value) ? value.toString("utf8") : "";
 }
 
 async function extractEnvVars(filePath: string): Promise<string[]> {
@@ -640,6 +661,83 @@ function splitCommand(command: string): string[] {
   return command.match(/(?:[^\s"]+|"[^"]*")+/g)?.map((part) => part.replace(/^"(.*)"$/, "$1")) ?? [];
 }
 
+function stripFenceBlock(segment: string): string {
+  return segment.replace(/^```[^\n]*\r?\n?/, "").replace(/\r?\n?```$/, "");
+}
+
+function stripInlineCode(segment: string): string {
+  return segment.replace(/^`|`$/g, "");
+}
+
+function extractCommandFromLine(line: string): string {
+  const strippedPrompt = line.trim().replace(/^(?:[$>]\s*)+/, "");
+  if (!strippedPrompt || strippedPrompt.startsWith("#")) {
+    return "";
+  }
+
+  if (/[{}[\]]/.test(strippedPrompt)) {
+    return "";
+  }
+
+  let remaining = strippedPrompt;
+  while (/^[A-Z_][A-Z0-9_]*=/.test(remaining)) {
+    remaining = remaining.replace(/^[A-Z_][A-Z0-9_]*=(?:"[^"]*"|'[^']*'|[^\s]+)\s*/, "");
+  }
+
+  const tokens = remaining.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) {
+    return "";
+  }
+
+  const first = tokens[0];
+  const reservedWords = new Set([
+    "accepts",
+    "declare",
+    "default",
+    "defaults",
+    "description",
+    "example",
+    "examples",
+    "export",
+    "flags",
+    "interface",
+    "not",
+    "options",
+    "usage"
+  ]);
+
+  if (!/^[a-z0-9][a-z0-9:_-]*$/.test(first) || reservedWords.has(first.toLowerCase())) {
+    return "";
+  }
+
+  const commandTokens: string[] = [];
+  for (const token of tokens) {
+    if (token.startsWith("-")) {
+      break;
+    }
+    if (
+      token.includes("/") ||
+      token.includes("\\") ||
+      token.includes(".") ||
+      token.includes("<") ||
+      token.includes(">") ||
+      token.includes("|") ||
+      token.includes(":")
+    ) {
+      break;
+    }
+    if (!/^[a-z0-9:_-]+$/.test(token)) {
+      break;
+    }
+    commandTokens.push(token);
+    if (commandTokens.length === 2) {
+      break;
+    }
+  }
+
+  return commandTokens.join(" ");
+}
+
 function parseSimpleYaml(content: string): unknown {
   const root: Record<string, unknown> = {};
   const lines = content.split(/\r?\n/);
@@ -748,7 +846,20 @@ function normalizeFlag(value: string): string {
 }
 
 function normalizeCommand(value: string): string {
-  return value.trim().replace(/\s+/g, " ").toLowerCase();
+  const normalized = value.trim().replace(/\s+/g, " ").toLowerCase();
+  if (normalized.startsWith("npx ")) {
+    return normalized.slice(4);
+  }
+  if (normalized.startsWith("pnpm dlx ")) {
+    return normalized.slice(9);
+  }
+  if (normalized.startsWith("yarn dlx ")) {
+    return normalized.slice(9);
+  }
+  if (normalized.startsWith("bunx ")) {
+    return normalized.slice(5);
+  }
+  return normalized;
 }
 
 function normalizeConfigKey(value: string): string {

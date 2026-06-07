@@ -179,3 +179,38 @@ test("CLI honors INIT_CWD for workspace execution", async () => {
 
   assert.match(stdout, /No documentation drift detected\./);
 });
+
+test("scanRepository parses CLI help even when the command exits non-zero", async () => {
+  const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "docs-drift-cli-nonzero-"));
+  tempDirs.push(fixtureRoot);
+
+  await fs.writeFile(
+    path.join(fixtureRoot, "README.md"),
+    [
+      "# Example CLI",
+      "",
+      "```bash",
+      "tool --help",
+      "```",
+      "",
+      "Supported flags: `--help`, `--watch`"
+    ].join("\n"),
+    "utf8"
+  );
+
+  const report = await scanRepository(fixtureRoot, {
+    docs: { include: ["README.md"] },
+    sources: {
+      cli: {
+        command:
+          "node -e \"console.log('tool path/to/file'); console.log('  --help  Show help'); process.exit(1);\""
+      }
+    },
+    checks: ["cli_flags"],
+    report: { failOn: ["missing_in_source"] }
+  });
+
+  assert.equal(report.issues.some((issue) => issue.kind === "parse_error"), false);
+  assert.equal(report.issues.some((issue) => issue.value === "--help"), false);
+  assert.equal(report.issues.some((issue) => issue.value === "--watch"), true);
+});
