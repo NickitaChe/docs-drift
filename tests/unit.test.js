@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {
+  SCAN_REPORT_SCHEMA_VERSION,
   formatTextReport,
   parseCliArguments,
   scanRepository,
@@ -46,6 +47,8 @@ test("parseCliArguments supports help without a command", () => {
 
 test("reporting formats an empty report", () => {
   const report = {
+    schemaVersion: SCAN_REPORT_SCHEMA_VERSION,
+    repositoryRoot: process.cwd(),
     checkedFiles: ["README.md"],
     issues: [],
     summary: {

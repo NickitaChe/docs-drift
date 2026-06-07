@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
 const DOUBLE_STAR_SENTINEL = "__DOCS_DRIFT_DOUBLE_STAR__";
+export const SCAN_REPORT_SCHEMA_VERSION = "docs-drift.report.v1";
 
 export type CheckName = "cli_flags" | "env_vars" | "config_keys";
 export type IssueKind = "missing_in_source" | "missing_in_docs" | "parse_error";
@@ -86,6 +87,8 @@ export interface DriftIssue {
 }
 
 export interface ScanReport {
+  schemaVersion: string;
+  repositoryRoot: string;
   checkedFiles: string[];
   issues: DriftIssue[];
   summary: {
@@ -113,6 +116,8 @@ export async function scanRepository(repositoryRoot: string, config: ScanConfig)
   const issues = [...sourceIssues, ...diffFacts(docs, sources, validatedConfig)];
 
   return {
+    schemaVersion: SCAN_REPORT_SCHEMA_VERSION,
+    repositoryRoot,
     checkedFiles,
     issues,
     summary: {

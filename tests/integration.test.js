@@ -5,7 +5,12 @@ import os from "node:os";
 import path from "node:path";
 import test, { afterEach } from "node:test";
 import { promisify } from "node:util";
-import { loadConfig, scanRepository, shouldFail } from "../packages/core/dist/index.js";
+import {
+  SCAN_REPORT_SCHEMA_VERSION,
+  loadConfig,
+  scanRepository,
+  shouldFail
+} from "../packages/core/dist/index.js";
 
 const tempDirs = [];
 const execFile = promisify(execFileCallback);
@@ -213,4 +218,38 @@ test("scanRepository parses CLI help even when the command exits non-zero", asyn
   assert.equal(report.issues.some((issue) => issue.kind === "parse_error"), false);
   assert.equal(report.issues.some((issue) => issue.value === "--help"), false);
   assert.equal(report.issues.some((issue) => issue.value === "--watch"), true);
+});
+
+test("scanRepository emits a stable machine-readable report contract", async () => {
+  const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "docs-drift-json-"));
+  tempDirs.push(fixtureRoot);
+
+  await fs.writeFile(path.join(fixtureRoot, "README.md"), "Set `DATABASE_URL` and `OLD_SECRET`.", "utf8");
+  await fs.writeFile(path.join(fixtureRoot, ".env.example"), "DATABASE_URL=postgres://demo\n", "utf8");
+
+  const report = await scanRepository(fixtureRoot, {
+    docs: { include: ["README.md"] },
+    sources: { env: { file: ".env.example" } },
+    checks: ["env_vars"],
+    report: { format: "json", failOn: ["missing_in_source"] }
+  });
+
+  assert.equal(report.schemaVersion, SCAN_REPORT_SCHEMA_VERSION);
+  assert.equal(report.repositoryRoot, fixtureRoot);
+  assert.deepEqual(report.checkedFiles, ["README.md"]);
+  assert.equal(Array.isArray(report.issues), true);
+  assert.deepEqual(report.summary.byKind, {
+    missing_in_source: 1,
+    missing_in_docs: 0,
+    parse_error: 0
+  });
+  assert.deepEqual(report.issues[0], {
+    check: "env_vars",
+    kind: "missing_in_source",
+    entityType: "env_var",
+    value: "OLD_SECRET",
+    normalized: "OLD_SECRET",
+    files: ["README.md"],
+    message: "Documented environment variable was not found in source file."
+  });
 });
