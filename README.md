@@ -144,6 +144,21 @@ Supporting docs for external rollout:
 - [Publish checklist](docs/publish-checklist.md)
 - [First push sequence](docs/first-push.md)
 
+## Early Rollout
+
+Initial external checks are already useful for calibration:
+
+- `benawad/gen-env-types`: clean pass for `cli_flags`
+- `sidneys/ffmpeg-progressbar-cli`: validated README/source mismatch around env var naming
+
+Concrete validated mismatch from `sidneys/ffmpeg-progressbar-cli`:
+
+- README documents `BAR_BEAM_RATIO`
+- README example uses `BAR_BAR_SIZE_RATIO`
+- source code reads `process.env.BAR_SIZE_RATIO`
+
+This is exactly the kind of drift `docs-drift` is meant to surface and turn into a small docs-only fix.
+
 ## Release readiness
 
 Before publishing a release candidate:
