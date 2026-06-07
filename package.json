@@ -1,0 +1,38 @@
+{
+  "name": "docs-drift-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Catch documentation drift between Markdown docs and code-defined sources of truth.",
+  "keywords": [
+    "docs",
+    "documentation",
+    "cli",
+    "github-actions",
+    "oss",
+    "quality"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm exec -- tsc -b --force",
+    "test": "node --test tests",
+    "test:watch": "node --test --watch tests",
+    "check": "npm run build && npm test",
+    "docs-drift": "node packages/cli/dist/index.js",
+    "scan": "node packages/cli/dist/index.js scan --config docs-drift.yml",
+    "pack:cli": "npm pack --dry-run --workspace docs-drift",
+    "pack:core": "npm pack --dry-run --workspace @docs-drift/core",
+    "release:check": "npm run check && npm run pack:cli && npm run pack:core",
+    "clean": "powershell -NoProfile -Command \"Get-ChildItem -Recurse -Directory dist -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force; Get-ChildItem -Recurse -Filter *.tsbuildinfo -ErrorAction SilentlyContinue | Remove-Item -Force\""
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.10",
+    "typescript": "^5.6.3"
+  }
+}

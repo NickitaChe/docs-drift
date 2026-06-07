@@ -1,0 +1,24 @@
+docs:
+  include:
+    - README.md
+    - docs/**/*.md
+
+sources:
+  env:
+    file: ".env.example"
+  configSchema:
+    file: "fixtures/config.schema.json"
+
+checks:
+  - env_vars
+  - config_keys
+
+ignore:
+  cliFlags: []
+  envVars: []
+  configKeys: []
+
+report:
+  format: text
+  failOn:
+    - missing_in_source

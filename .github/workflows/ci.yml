@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: CLI smoke test
+        run: node packages/cli/dist/index.js scan --config docs-drift.yml
+
+      - name: Action smoke test
+        env:
+          INPUT_CONFIG: docs-drift.yml
+          INPUT_FAIL_ON: missing_in_source,parse_error
+          GITHUB_STEP_SUMMARY: summary.md
+        run: node packages/github-action/dist/index.js

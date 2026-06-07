@@ -1,0 +1,28 @@
+docs:
+  include:
+    - README.md
+    - docs/**/*.md
+
+sources:
+  cli:
+    command: "your-cli --help"
+  env:
+    file: ".env.example"
+  configSchema:
+    file: "config.schema.json"
+
+checks:
+  - cli_flags
+  - env_vars
+  - config_keys
+
+ignore:
+  cliFlags: []
+  envVars: []
+  configKeys: []
+
+report:
+  format: text
+  failOn:
+    - missing_in_source
+    - parse_error

@@ -1,0 +1,22 @@
+{
+  "name": "@docs-drift/github-action",
+  "version": "0.1.0",
+  "description": "GitHub Action wrapper for docs-drift.",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "action.yml",
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@docs-drift/core": "0.1.0"
+  }
+}

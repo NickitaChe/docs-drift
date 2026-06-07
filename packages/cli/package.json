@@ -1,0 +1,33 @@
+{
+  "name": "docs-drift",
+  "version": "0.1.0",
+  "description": "CLI for docs-drift.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "docs-drift": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@docs-drift/core": "0.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
