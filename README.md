@@ -173,6 +173,10 @@ Initial external checks are already useful for calibration:
 - `benawad/gen-env-types`: clean pass for `cli_flags`
 - `sidneys/ffmpeg-progressbar-cli`: validated README/source mismatch around env var naming
 
+The first real external docs-only PR has now been opened from the operator flow:
+
+- `sidneys/ffmpeg-progressbar-cli`: [PR #43](https://github.com/sidneys/ffmpeg-progressbar-cli/pull/43)
+
 Concrete validated mismatch from `sidneys/ffmpeg-progressbar-cli`:
 
 - README documents `BAR_BEAM_RATIO`
