@@ -131,8 +131,14 @@ There is also a concrete external PR package example in:
 
 - [operator-console/examples/ffmpeg-progressbar-cli-pr-package.json](operator-console/examples/ffmpeg-progressbar-cli-pr-package.json)
 - [operator-console/examples/ffmpeg-progressbar-cli-pr.md](operator-console/examples/ffmpeg-progressbar-cli-pr.md)
+- [operator-console/examples/sample-store.json](operator-console/examples/sample-store.json)
 
 These are intentionally outside the `docs-drift` workspaces so the scanner stays focused on drift detection.
+
+Useful root commands:
+
+- `npm run operator:start`
+- `npm run proof:start`
 
 ## Try it on another repo
 
