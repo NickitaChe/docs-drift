@@ -137,8 +137,10 @@ These are intentionally outside the `docs-drift` workspaces so the scanner stays
 
 Useful root commands:
 
+- `npm run operator:test`
 - `npm run operator:start`
 - `npm run proof:start`
+- `npm run proof:sync`
 
 ## Try it on another repo
 
