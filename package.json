@@ -29,11 +29,6 @@
     "pack:cli": "npm pack --dry-run --workspace docs-drift",
     "pack:core": "npm pack --dry-run --workspace @docs-drift/core",
     "release:check": "npm run check && npm run pack:cli && npm run pack:core",
-    "operator:build": "npm exec -- tsc -p operator-console/tsconfig.json",
-    "operator:test": "powershell -NoProfile -Command \"node --test (Get-ChildItem 'operator-console/dist/tests/*.test.js' | ForEach-Object FullName)\"",
-    "operator:start": "npm run operator:build && node operator-console/dist/src/server.js",
-    "proof:sync": "npm run operator:build && node operator-console/dist/src/export-snapshot.js",
-    "proof:start": "node proof-site/serve.mjs",
     "clean": "powershell -NoProfile -Command \"Get-ChildItem -Recurse -Directory dist -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force; Get-ChildItem -Recurse -Filter *.tsbuildinfo -ErrorAction SilentlyContinue | Remove-Item -Force\""
   },
   "devDependencies": {

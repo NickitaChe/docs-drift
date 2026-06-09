@@ -120,28 +120,6 @@ The action writes a Markdown summary to the workflow job summary and fails when 
 
 For local development in this monorepo, `npm run docs-drift -- --help` and `npm run scan` are the supported entrypoints.
 
-## Adjacent Apps
-
-This repository now also contains two repo-ready scaffolds that are intended to be split out over time:
-
-- `operator-console/`: a local operator app for scanning repos, reviewing findings, and creating issues/PRs
-- `proof-site/`: a static snapshot-driven site for public rollout results and validated examples
-
-There is also a concrete external PR package example in:
-
-- [operator-console/examples/ffmpeg-progressbar-cli-pr-package.json](operator-console/examples/ffmpeg-progressbar-cli-pr-package.json)
-- [operator-console/examples/ffmpeg-progressbar-cli-pr.md](operator-console/examples/ffmpeg-progressbar-cli-pr.md)
-- [operator-console/examples/sample-store.json](operator-console/examples/sample-store.json)
-
-These are intentionally outside the `docs-drift` workspaces so the scanner stays focused on drift detection.
-
-Useful root commands:
-
-- `npm run operator:test`
-- `npm run operator:start`
-- `npm run proof:start`
-- `npm run proof:sync`
-
 ## Try it on another repo
 
 1. Clone a target repository locally.
